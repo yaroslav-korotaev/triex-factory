@@ -1,52 +1,83 @@
 import type {
   SchemaIs,
-  StreamHintsCallback,
-  StreamOutputCallback,
+  BlockDynamicParamsSetup,
+  BlockEnumerateCallback,
   StreamProcessCallback,
   StreamSpec,
 } from 'triex-types';
 
-export type ParamsBuilderOptions<P extends object> = {
-  mandatory?: string[];
-  hints?: StreamHintsCallback<P>;
-  output?: StreamOutputCallback<P>;
+export type StreamStateBuilder<S, C, P> = {
+  (): StreamBuilder<object, C, P>;
+  <T>(is: SchemaIs<T>): StreamBuilder<T, C, P>;
 };
 
-export type StreamStateBuilder<S, P> = {
-  <T extends object>(is: SchemaIs<T>): StreamBuilder<T, P>;
+export type StreamConfigBuilder<S, C, P> = {
+  one<T>(configurator: string): StreamBuilder<S, T, P>;
 };
 
-export type StreamParamsBuilder<S, P> = {
-  <T extends object>(is: SchemaIs<T>, options?: ParamsBuilderOptions<T>): StreamBuilder<S, T>;
+export type StreamParamsBuilder<S, C, P> = {
+  static(): StreamBuilder<S, C, object>;
+  static<T>(is: SchemaIs<T>): StreamBuilder<S, C, T>;
+  
+  dynamic(setup: BlockDynamicParamsSetup<C, P>): StreamBuilder<S, C, object>;
 };
 
-export type StreamProcessBuilder<S, P> = {
-  (callback: StreamProcessCallback<S, P>): StreamBuilder<S, P>;
+export type StreamEnumerateBuilder<S, C, P> = {
+  (callback: BlockEnumerateCallback<C, P>): StreamBuilder<S, C, P>;
 };
 
-export type StreamBuilder<S, P> = {
-  state: StreamStateBuilder<S, P>;
-  params: StreamParamsBuilder<S, P>;
-  process: StreamProcessBuilder<S, P>;
+export type StreamProcessBuilder<S, C, P> = {
+  (callback: StreamProcessCallback<S, C, P>): StreamBuilder<S, C, P>;
+};
+
+export type StreamBuilder<S, C, P> = {
+  state: StreamStateBuilder<S, C, P>;
+  config: StreamConfigBuilder<S, C, P>;
+  params: StreamParamsBuilder<S, C, P>;
+  enumerate: StreamEnumerateBuilder<S, C, P>;
+  process: StreamProcessBuilder<S, C, P>;
   spec(): StreamSpec;
 };
 
-export function stream(): StreamBuilder<object, void> {
+export function stream(): StreamBuilder<object, void, void> {
   const spec: StreamSpec = {
+    state: null,
+    config: null,
     params: null,
+    enumerate: null,
     process: null!,
   };
-  const builder: StreamBuilder<any, any> = {
-    state: () => {
+  const builder: StreamBuilder<any, any, any> = {
+    state: (is?: SchemaIs<object>) => {
+      if (is) {
+        spec.state = { is };
+      } else {
+        spec.state = { is: null };
+      }
       return builder;
     },
-    params: (is, options) => {
-      spec.params = {
-        is,
-        mandatory: options?.mandatory ?? [],
-        hints: options?.hints ?? null,
-        output: options?.output as StreamOutputCallback<object> ?? null,
-      };
+    config: {
+      one: configurator => {
+        spec.config = { type: 'one', configurator };
+        return builder;
+      },
+    },
+    params: {
+      static: (is?: SchemaIs<object>) => {
+        if (is) {
+          spec.params = { type: 'static', is };
+        } else {
+          spec.params = { type: 'static', is: null };
+        }
+        return builder;
+      },
+      dynamic: setup => {
+        spec.params = { type: 'dynamic', setup };
+        return builder;
+      },
+    },
+    enumerate: callback => {
+      spec.enumerate = callback;
       return builder;
     },
     process: callback => {
