@@ -1,6 +1,6 @@
 {
   "name": "triex-factory",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "",
   "keywords": [],
   "bugs": "https://github.com/yaroslav-korotaev/triex-factory/issues",
@@ -14,7 +14,7 @@
   "repository": "yaroslav-korotaev/triex-factory",
   "scripts": {},
   "dependencies": {
-    "triex-types": "^0.2.0"
+    "triex-types": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^18.7.3",
