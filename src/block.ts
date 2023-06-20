@@ -1,6 +1,6 @@
 import type {
   SchemaIs,
-  BlockDynamicParamsSetup,
+  ShapeIs,
   BlockEnumerateCallback,
   BlockMethodCallback,
   BlockSpec,
@@ -11,6 +11,9 @@ export type BlockInputBuilder<I, O, S, C, P> = {
   
   one(): BlockBuilder<object, O, S, C, P>;
   one<T>(is: SchemaIs<T>): BlockBuilder<T, O, S, C, P>;
+  
+  many(): BlockBuilder<object, O, S, C, P>;
+  many<T>(is: ShapeIs<T>): BlockBuilder<T, O, S, C, P>;
 };
 
 export type BlockOutputBuilder<I, O, S, C, P> = {
@@ -18,6 +21,9 @@ export type BlockOutputBuilder<I, O, S, C, P> = {
   
   one(): BlockBuilder<I, object, S, C, P>;
   one<T>(is: SchemaIs<T>): BlockBuilder<I, T, S, C, P>;
+  
+  many(): BlockBuilder<I, object, S, C, P>;
+  many<T>(is: ShapeIs<T>): BlockBuilder<I, T, S, C, P>;
 };
 
 export type BlockStateBuilder<I, O, S, C, P> = {
@@ -30,10 +36,8 @@ export type BlockConfigBuilder<I, O, S, C, P> = {
 };
 
 export type BlockParamsBuilder<I, O, S, C, P> = {
-  static(): BlockBuilder<I, O, S, C, object>;
-  static<T>(is: SchemaIs<T>): BlockBuilder<I, O, S, C, T>;
-  
-  dynamic(setup: BlockDynamicParamsSetup<C, P>): BlockBuilder<I, O, S, C, object>;
+  (): BlockBuilder<I, O, S, C, object>;
+  <T>(is: SchemaIs<T>): BlockBuilder<I, O, S, C, T>;
 };
 
 export type BlockEnumerateBuilder<I, O, S, C, P> = {
@@ -84,6 +88,14 @@ export function block(): BlockBuilder<void, void, void, void, void> {
         }
         return builder;
       },
+      many: (is?: ShapeIs<object>) => {
+        if (is) {
+          spec.input = { type: 'many', is };
+        } else {
+          spec.input = { type: 'many', is: null };
+        }
+        return builder;
+      },
     },
     output: {
       none: () => {
@@ -95,6 +107,14 @@ export function block(): BlockBuilder<void, void, void, void, void> {
           spec.output = { type: 'one', is };
         } else {
           spec.output = { type: 'one', is: null };
+        }
+        return builder;
+      },
+      many: (is?: ShapeIs<object>) => {
+        if (is) {
+          spec.output = { type: 'many', is };
+        } else {
+          spec.output = { type: 'many', is: null };
         }
         return builder;
       },
@@ -113,19 +133,13 @@ export function block(): BlockBuilder<void, void, void, void, void> {
         return builder;
       },
     },
-    params: {
-      static: (is?: SchemaIs<object>) => {
-        if (is) {
-          spec.params = { type: 'static', is };
-        } else {
-          spec.params = { type: 'static', is: null };
-        }
-        return builder;
-      },
-      dynamic: setup => {
-        spec.params = { type: 'dynamic', setup };
-        return builder;
-      },
+    params: (is?: SchemaIs<object>) => {
+      if (is) {
+        spec.params = { is };
+      } else {
+        spec.params = { is: null };
+      }
+      return builder;
     },
     enumerate: callback => {
       spec.enumerate = callback;

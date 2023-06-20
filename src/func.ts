@@ -1,6 +1,5 @@
 import type {
   SchemaIs,
-  BlockDynamicParamsSetup,
   FuncExecCallback,
   FuncSpec,
 } from 'triex-types';

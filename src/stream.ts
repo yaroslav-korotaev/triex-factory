@@ -1,6 +1,5 @@
 import type {
   SchemaIs,
-  BlockDynamicParamsSetup,
   BlockEnumerateCallback,
   StreamProcessCallback,
   StreamSpec,
@@ -16,10 +15,8 @@ export type StreamConfigBuilder<S, C, P> = {
 };
 
 export type StreamParamsBuilder<S, C, P> = {
-  static(): StreamBuilder<S, C, object>;
-  static<T>(is: SchemaIs<T>): StreamBuilder<S, C, T>;
-  
-  dynamic(setup: BlockDynamicParamsSetup<C, P>): StreamBuilder<S, C, object>;
+  (): StreamBuilder<S, C, object>;
+  <T>(is: SchemaIs<T>): StreamBuilder<S, C, T>;
 };
 
 export type StreamEnumerateBuilder<S, C, P> = {
@@ -62,19 +59,13 @@ export function stream(): StreamBuilder<object, void, void> {
         return builder;
       },
     },
-    params: {
-      static: (is?: SchemaIs<object>) => {
-        if (is) {
-          spec.params = { type: 'static', is };
-        } else {
-          spec.params = { type: 'static', is: null };
-        }
-        return builder;
-      },
-      dynamic: setup => {
-        spec.params = { type: 'dynamic', setup };
-        return builder;
-      },
+    params: (is?: SchemaIs<object>) => {
+      if (is) {
+        spec.params = { is };
+      } else {
+        spec.params = { is: null };
+      }
+      return builder;
     },
     enumerate: callback => {
       spec.enumerate = callback;
