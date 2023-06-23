@@ -1,63 +1,64 @@
 import type {
   SchemaIs,
   ShapeIs,
+  BlueprintRef,
   BlockEnumerateCallback,
   BlockMethodCallback,
   BlockSpec,
 } from 'triex-types';
 
-export type BlockInputBuilder<I, O, S, C, P> = {
-  none(): BlockBuilder<void, O, S, C, P>;
+export type BlockInputBuilder<I, O, R, S, P> = {
+  none(): BlockBuilder<void, O, R, S, P>;
   
-  one(): BlockBuilder<object, O, S, C, P>;
-  one<T>(is: SchemaIs<T>): BlockBuilder<T, O, S, C, P>;
+  one(): BlockBuilder<object, O, R, S, P>;
+  one<T>(is: SchemaIs<T>): BlockBuilder<T, O, R, S, P>;
   
-  many(): BlockBuilder<object, O, S, C, P>;
-  many<T>(is: ShapeIs<T>): BlockBuilder<T, O, S, C, P>;
+  many(): BlockBuilder<object, O, R, S, P>;
+  many<T>(is: ShapeIs<T>): BlockBuilder<T, O, R, S, P>;
 };
 
-export type BlockOutputBuilder<I, O, S, C, P> = {
-  none(): BlockBuilder<I, void, S, C, P>;
+export type BlockOutputBuilder<I, O, R, S, P> = {
+  none(): BlockBuilder<I, void, R, S, P>;
   
-  one(): BlockBuilder<I, object, S, C, P>;
-  one<T>(is: SchemaIs<T>): BlockBuilder<I, T, S, C, P>;
+  one(): BlockBuilder<I, object, R, S, P>;
+  one<T>(is: SchemaIs<T>): BlockBuilder<I, T, R, S, P>;
   
-  many(): BlockBuilder<I, object, S, C, P>;
-  many<T>(is: ShapeIs<T>): BlockBuilder<I, T, S, C, P>;
+  many(): BlockBuilder<I, object, R, S, P>;
+  many<T>(is: ShapeIs<T>): BlockBuilder<I, T, R, S, P>;
 };
 
-export type BlockStateBuilder<I, O, S, C, P> = {
-  (): BlockBuilder<I, O, object, C, P>;
-  <T>(is: SchemaIs<T>): BlockBuilder<I, O, T, C, P>;
+export type BlockResourceBuilder<I, O, R, S, P> = {
+  one<T>(ref: BlueprintRef<T>): BlockBuilder<I, O, T, S, P>;
 };
 
-export type BlockConfigBuilder<I, O, S, C, P> = {
-  one<T>(configurator: string): BlockBuilder<I, O, S, T, P>;
+export type BlockStateBuilder<I, O, R, S, P> = {
+  (): BlockBuilder<I, O, R, object, P>;
+  <T>(is: SchemaIs<T>): BlockBuilder<I, O, R, T, P>;
 };
 
-export type BlockParamsBuilder<I, O, S, C, P> = {
-  (): BlockBuilder<I, O, S, C, object>;
-  <T>(is: SchemaIs<T>): BlockBuilder<I, O, S, C, T>;
+export type BlockParamsBuilder<I, O, R, S, P> = {
+  (): BlockBuilder<I, O, R, S, object>;
+  <T>(is: SchemaIs<T>): BlockBuilder<I, O, R, S, T>;
 };
 
-export type BlockEnumerateBuilder<I, O, S, C, P> = {
-  (callback: BlockEnumerateCallback<C, P>): BlockBuilder<I, O, S, C, P>;
+export type BlockEnumerateBuilder<I, O, R, S, P> = {
+  (callback: BlockEnumerateCallback<R, P>): BlockBuilder<I, O, R, S, P>;
 };
 
-export type BlockMethodBuilder<I, O, S, C, P> = {
-  (callback: BlockMethodCallback<I, O, S, C, P>): BlockBuilder<I, O, S, C, P>;
+export type BlockMethodBuilder<I, O, R, S, P> = {
+  (callback: BlockMethodCallback<I, O, R, S, P>): BlockBuilder<I, O, R, S, P>;
 };
 
-export type BlockBuilder<I, O, S, C, P> = {
-  input: BlockInputBuilder<I, O, S, C, P>;
-  output: BlockOutputBuilder<I, O, S, C, P>;
-  state: BlockStateBuilder<I, O, S, C, P>;
-  config: BlockConfigBuilder<I, O, S, C, P>;
-  params: BlockParamsBuilder<I, O, S, C, P>;
-  enumerate: BlockEnumerateBuilder<I, O, S, C, P>;
-  init: BlockMethodBuilder<I, O, S, C, P>;
-  trigger: BlockMethodBuilder<I, O, S, C, P>;
-  process: BlockMethodBuilder<I, O, S, C, P>;
+export type BlockBuilder<I, O, R, S, P> = {
+  input: BlockInputBuilder<I, O, R, S, P>;
+  output: BlockOutputBuilder<I, O, R, S, P>;
+  resource: BlockResourceBuilder<I, O, R, S, P>;
+  state: BlockStateBuilder<I, O, R, S, P>;
+  params: BlockParamsBuilder<I, O, R, S, P>;
+  enumerate: BlockEnumerateBuilder<I, O, R, S, P>;
+  init: BlockMethodBuilder<I, O, R, S, P>;
+  trigger: BlockMethodBuilder<I, O, R, S, P>;
+  process: BlockMethodBuilder<I, O, R, S, P>;
   spec: () => BlockSpec;
 };
 
@@ -65,8 +66,8 @@ export function block(): BlockBuilder<void, void, void, void, void> {
   const spec: BlockSpec = {
     input: null,
     output: null,
+    resource: null,
     state: null,
-    config: null,
     params: null,
     enumerate: null,
     init: null,
@@ -119,6 +120,12 @@ export function block(): BlockBuilder<void, void, void, void, void> {
         return builder;
       },
     },
+    resource: {
+      one: ref => {
+        spec.resource = { type: 'one', ref };
+        return builder;
+      },
+    },
     state: (is?: SchemaIs<object>) => {
       if (is) {
         spec.state = { is };
@@ -126,12 +133,6 @@ export function block(): BlockBuilder<void, void, void, void, void> {
         spec.state = { is: null };
       }
       return builder;
-    },
-    config: {
-      one: configurator => {
-        spec.config = { type: 'one', configurator };
-        return builder;
-      },
     },
     params: (is?: SchemaIs<object>) => {
       if (is) {

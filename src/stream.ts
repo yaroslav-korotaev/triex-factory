@@ -1,50 +1,57 @@
 import type {
   SchemaIs,
+  BlueprintRef,
   BlockEnumerateCallback,
   StreamProcessCallback,
   StreamSpec,
 } from 'triex-types';
 
-export type StreamStateBuilder<S, C, P> = {
-  (): StreamBuilder<object, C, P>;
-  <T>(is: SchemaIs<T>): StreamBuilder<T, C, P>;
+export type StreamResourceBuilder<R, S, P> = {
+  one<T>(ref: BlueprintRef<T>): StreamBuilder<T, S, P>;
 };
 
-export type StreamConfigBuilder<S, C, P> = {
-  one<T>(configurator: string): StreamBuilder<S, T, P>;
+export type StreamStateBuilder<R, S, P> = {
+  (): StreamBuilder<R, object, P>;
+  <T>(is: SchemaIs<T>): StreamBuilder<R, T, P>;
 };
 
-export type StreamParamsBuilder<S, C, P> = {
-  (): StreamBuilder<S, C, object>;
-  <T>(is: SchemaIs<T>): StreamBuilder<S, C, T>;
+export type StreamParamsBuilder<R, S, P> = {
+  (): StreamBuilder<R, S, object>;
+  <T>(is: SchemaIs<T>): StreamBuilder<R, S, T>;
 };
 
-export type StreamEnumerateBuilder<S, C, P> = {
-  (callback: BlockEnumerateCallback<C, P>): StreamBuilder<S, C, P>;
+export type StreamEnumerateBuilder<R, S, P> = {
+  (callback: BlockEnumerateCallback<R, P>): StreamBuilder<R, S, P>;
 };
 
-export type StreamProcessBuilder<S, C, P> = {
-  (callback: StreamProcessCallback<S, C, P>): StreamBuilder<S, C, P>;
+export type StreamProcessBuilder<R, S, P> = {
+  (callback: StreamProcessCallback<R, S, P>): StreamBuilder<R, S, P>;
 };
 
-export type StreamBuilder<S, C, P> = {
-  state: StreamStateBuilder<S, C, P>;
-  config: StreamConfigBuilder<S, C, P>;
-  params: StreamParamsBuilder<S, C, P>;
-  enumerate: StreamEnumerateBuilder<S, C, P>;
-  process: StreamProcessBuilder<S, C, P>;
+export type StreamBuilder<R, S, P> = {
+  resource: StreamResourceBuilder<R, S, P>;
+  state: StreamStateBuilder<R, S, P>;
+  params: StreamParamsBuilder<R, S, P>;
+  enumerate: StreamEnumerateBuilder<R, S, P>;
+  process: StreamProcessBuilder<R, S, P>;
   spec(): StreamSpec;
 };
 
 export function stream(): StreamBuilder<object, void, void> {
   const spec: StreamSpec = {
+    resource: null,
     state: null,
-    config: null,
     params: null,
     enumerate: null,
     process: null!,
   };
   const builder: StreamBuilder<any, any, any> = {
+    resource: {
+      one: ref => {
+        spec.resource = { type: 'one', ref };
+        return builder;
+      },
+    },
     state: (is?: SchemaIs<object>) => {
       if (is) {
         spec.state = { is };
@@ -52,12 +59,6 @@ export function stream(): StreamBuilder<object, void, void> {
         spec.state = { is: null };
       }
       return builder;
-    },
-    config: {
-      one: configurator => {
-        spec.config = { type: 'one', configurator };
-        return builder;
-      },
     },
     params: (is?: SchemaIs<object>) => {
       if (is) {
