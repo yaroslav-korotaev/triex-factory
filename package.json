@@ -14,7 +14,7 @@
   "repository": "yaroslav-korotaev/triex-factory",
   "scripts": {},
   "dependencies": {
-    "triex-types": "^0.7.0"
+    "triex-types": "^0.8.0"
   },
   "devDependencies": {
     "@types/node": "^18.7.3",
