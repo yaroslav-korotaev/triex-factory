@@ -1,49 +1,79 @@
 import type {
   SchemaIs,
-  BlueprintExecuteCallback,
+  BlueprintTransformCallback,
+  BlueprintViewCallback,
+  BlueprintSpecPlain,
+  BlueprintSpecExternal,
   BlueprintSpec,
 } from 'triex-types';
 
-export type BlueprintResourceBuilder<R, C> = {
-  <T extends object>(is: SchemaIs<T>): BlueprintBuilder<T, C>;
+export type BlueprintDataBuilder = {
+  (is: SchemaIs<object>): BlueprintBuilderPlain;
 };
 
-export type BlueprintCommandBuilder<R, C> = {
-  <T extends object>(is: SchemaIs<T>): BlueprintBuilder<R, T>;
+export type BlueprintTransformBuilder<D, T> = {
+  (callback: BlueprintTransformCallback<D, T>): BlueprintBuilderExternal<D, T>;
 };
 
-export type BlueprintExecuteBuilder<R, C> = {
-  (callback: BlueprintExecuteCallback<R, C>): BlueprintBuilder<R, C>;
+export type BlueprintViewBuilder<D, T> = {
+  (callback: BlueprintViewCallback<D>): BlueprintBuilderExternal<D, T>;
 };
 
-export type BlueprintBuilder<R, C> = {
-  resource: BlueprintResourceBuilder<R, C>;
-  command: BlueprintCommandBuilder<R, C>;
-  execute: BlueprintExecuteBuilder<R, C>;
-  spec: () => BlueprintSpec;
+export type BlueprintBuilderPlain = {
+  data: BlueprintDataBuilder;
+  spec: () => BlueprintSpecPlain;
 };
 
-export function blueprint(): BlueprintBuilder<object, object> {
-  const spec: BlueprintSpec = {
-    resource: null,
-    command: null,
-    execute: async (resource, command) => resource ?? command,
-  };
-  
-  const builder: BlueprintBuilder<any, any> = {
-    resource: (is: SchemaIs<object>) => {
-      spec.resource = is;
-      return builder;
+export type BlueprintBuilderExternal<D, T> = {
+  transform: BlueprintTransformBuilder<D, T>;
+  view: BlueprintViewBuilder<D, T>;
+  spec: () => BlueprintSpecExternal;
+};
+
+export type BlueprintBuilder = {
+  plain: () => BlueprintBuilderPlain;
+  external: () => BlueprintBuilderExternal<object, object>;
+};
+
+export function blueprint(): BlueprintBuilder {
+  const builder: BlueprintBuilder = {
+    plain: () => {
+      const spec: BlueprintSpecPlain = {
+        type: 'plain',
+        data: null,
+      };
+      
+      const builderPlain: BlueprintBuilderPlain = {
+        data: is => {
+          spec.data = { is };
+          return builderPlain;
+        },
+        spec: () => spec,
+      };
+      
+      return builderPlain;
     },
-    command: (is: SchemaIs<object>) => {
-      spec.command = is;
-      return builder;
+    external: () => {
+      const spec: BlueprintSpecExternal = {
+        type: 'external',
+        transform: null as any,
+        view: null as any,
+      };
+      
+      const builderExternal: BlueprintBuilderExternal<any, any> = {
+        transform: callback => {
+          spec.transform = callback;
+          return builderExternal;
+        },
+        view: callback => {
+          spec.view = callback;
+          return builderExternal;
+        },
+        spec: () => spec,
+      };
+      
+      return builderExternal;
     },
-    execute: callback => {
-      spec.execute = callback;
-      return builder;
-    },
-    spec: () => spec,
   };
   
   return builder;
