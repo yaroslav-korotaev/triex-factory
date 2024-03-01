@@ -18,6 +18,7 @@ export type ContextPullResult = {
   next: Date | undefined;
   state: object | undefined;
   objects: object[];
+  metrics?: Record<string, number>;
 };
 
 export type ContextPull = BlockPullContextAny & {
@@ -38,6 +39,7 @@ export function createPullContext(
     state,
     options,
   };
+  let metrics: Record<string, number> | undefined = undefined;
   
   return {
     signal,
@@ -59,11 +61,20 @@ export function createPullContext(
       },
     },
     options,
+    metrics: {
+      set: (key, value) => {
+        if (!metrics) {
+          metrics = {};
+        }
+        
+        metrics[key] = value;
+      },
+    },
     snapshot: () => {
       return snapshot;
     },
     result: () => {
-      return { next, state, objects };
+      return { next, state, objects, metrics };
     },
   };
 }
@@ -84,6 +95,7 @@ export type ContextProcessSnapshot = {
 export type ContextProcessResult = {
   state: object | undefined;
   output: object[];
+  metrics?: Record<string, number>;
 };
 
 export type ContextProcess = BlockProcessContextAny & {
@@ -105,6 +117,7 @@ export function createProcessContext(
     state,
     params,
   };
+  let metrics: Record<string, number> | undefined = undefined;
   
   return {
     signal,
@@ -122,11 +135,20 @@ export function createProcessContext(
       },
     },
     params,
+    metrics: {
+      set: (key, value) => {
+        if (!metrics) {
+          metrics = {};
+        }
+        
+        metrics[key] = value;
+      },
+    },
     snapshot: () => {
       return snapshot;
     },
     result: () => {
-      return { state, output };
+      return { state, output, metrics };
     },
   };
 }
